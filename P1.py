@@ -72,16 +72,22 @@ def calc_slope(line) :
 def x4y(line, ny, slope) :
    # slope = calc_slope(line)
     x1,y1 = line[0][:2]
-    return (ny+slope*x1-y1)/slope
+    r =  (ny+slope*x1-y1)/slope
+    if(np.isnan(r)) :
+        print("Nan ")
+        print(line)
+        print(ny)
+        print(slope)
+    return r
 
 def smooth(lines) :
     xs = np.array([l[0][0] for l in lines])
     A = np.array([ xs, np.ones(xs.size)])
     y = np.array([l[0][1] for l in lines])
     w = np.linalg.lstsq(A.T,y)
-    print("!!!")
-    print(w)
-    print(w[0])
+#    print("!!!")
+#    print(w)
+#    print(w[0])
     return w[0]
     
 def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
@@ -104,35 +110,36 @@ def draw_lines(img, lines, color=[255, 0, 0], thickness=2):
     
     # verrtical lines will cause NPE in slope calculation. Filter out
     # could be avoided by conversion to polar coords, but not done for now
-    print(lines)
-    lines = [ l for l in lines if l[0][1] != l[0][3] and np.abs(calc_slope(l))>0.5]
+ #   print(lines)
+    lines = [ l for l in lines if  np.abs(calc_slope(l))>0.5]
+    if(len(lines)== 0) :
+        return
+    
     slopes = [calc_slope(l) for l in lines]
-    print ("###################")
-    print ("---------------------------")
+  #  print ("###################")
+#    print ("---------------------------")
+#    print (len(lines))
     a_slope = np.median(slopes)
-    print (a_slope)
+    if(np.isnan(a_slope)) :
+        print(slopes)
    # a_slope = smooth(lines)[0]
     bottomX = [x4y(l,img.shape[0],a_slope ) for l in lines]
-    print (bottomX)
-    print ("bot --")
-    print (np.mean(bottomX))
+#    print (bottomX)
+#    print ("bot --" +str(a_slope))
+#    print (np.mean(bottomX))
     a_bottomX = int(np.mean(bottomX))
     topX = [x4y(l,roiY, a_slope ) for l in lines]
-    print (topX)
-    print ("top --")
+#    print (topX)
+#    print ("top --")
     a_topX = int(np.mean(topX))
-    print(a_topX)
-    print (img.shape)
-    cv2.line(img, (a_topX ,roiY), (a_bottomX, img.shape[0]), [0,0,255], 6)
-    print (calc_slope([[a_topX,roiY,a_bottomX,img.shape[0]]]))
-    print
+#    print(a_topX)
+#    print (img.shape)
+    cv2.line(img, (a_topX ,roiY), (a_bottomX, img.shape[0]), color, 6)
+#    print (calc_slope([[a_topX,roiY,a_bottomX,img.shape[0]]]))
+#    print
     for line in lines:
         for x1,y1,x2,y2 in line:
-            mcolor = color
-            slope = ((y2-y1)/(x2-x1)) 
-            if slope > 0 :
-                mcolor = [0,255,0]
-            cv2.line(img, (x1, y1), (x2, y2), mcolor, thickness)
+            cv2.line(img, (x1, y1), (x2, y2), [0,255,0], thickness)
 
 def hough_lines(img, rho, theta, threshold, min_line_len, max_line_gap):
     """
@@ -141,10 +148,10 @@ def hough_lines(img, rho, theta, threshold, min_line_len, max_line_gap):
     Returns an image with hough lines drawn.
     """
     h,w = img.shape
-    print("hough!!")
-    print(w)
+   # print("hough!!")
+   # print(w)
     lines = cv2.HoughLinesP(img, rho, theta, threshold, np.array([]), minLineLength=min_line_len, maxLineGap=max_line_gap)
-    print ("................. "+str(lines.size))
+  #  print ("................. "+str(lines.size))
     line_img = np.zeros((img.shape[0], img.shape[1], 3), dtype=np.uint8)
     draw_lines(line_img, [l for l in lines if calc_slope(l) > 0 and l[0][0] > w/2])
     draw_lines(line_img, [l for l in lines if calc_slope(l) < 0 and l[0][0] < w/2])
@@ -174,11 +181,11 @@ def process_image(image):
     result = gaussian_blur(result,5)
     # 70, 150
     result = canny(result,70,150)
-    mpimg.imsave('/home/andreas/NanoDegree/CarND-LaneLines-P1/test_images_output/canny-0.png',result)
+  #  mpimg.imsave('/home/andreas/NanoDegree/CarND-LaneLines-P1/test_images_output/canny-0.png',result)
     result = region_of_interest(result,vertices)
     # result = hough_lines(result,2,1,20,6,30)
     result = hough_lines(result,3,np.pi/180,30,6,30)
-    mpimg.imsave('/home/andreas/NanoDegree/CarND-LaneLines-P1/test_images_output/hough-0.png',result)
+  #  mpimg.imsave('/home/andreas/NanoDegree/CarND-LaneLines-P1/test_images_output/hough-0.png',result)
     result = weighted_img(result,image)
     return result
 
@@ -202,18 +209,18 @@ print([plt.imshow(x,  cmap='gray') for x in rArray])
 
 from moviepy.editor import VideoFileClip
 
-#
-#white_output = rootDir+'test_videos_output/solidWhiteRight.mp4'
-#clip1 = VideoFileClip(rootDir+"test_videos/solidWhiteRight.mp4")
-#white_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-#white_clip.write_videofile(white_output, audio=False)
-#
-#y_output = rootDir+'test_videos_output/solidYellowLeft.mp4'
-#clip1 = VideoFileClip(rootDir+"test_videos/solidYellowLeft.mp4")
-#y_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-#y_clip.write_videofile(y_output, audio=False)
-#
-#c_output = rootDir+'test_videos_output/challenge.mp4'
-#clip1 = VideoFileClip(rootDir+"test_videos/challenge.mp4")
-#c_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-#c_clip.write_videofile(c_output, audio=False)
+
+white_output = rootDir+'test_videos_output/solidWhiteRight.mp4'
+clip1 = VideoFileClip(rootDir+"test_videos/solidWhiteRight.mp4")
+white_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+white_clip.write_videofile(white_output, audio=False)
+
+y_output = rootDir+'test_videos_output/solidYellowLeft.mp4'
+clip1 = VideoFileClip(rootDir+"test_videos/solidYellowLeft.mp4")
+y_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+y_clip.write_videofile(y_output, audio=False)
+
+c_output = rootDir+'test_videos_output/challenge.mp4'
+clip1 = VideoFileClip(rootDir+"test_videos/challenge.mp4")
+c_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+c_clip.write_videofile(c_output, audio=False)
