@@ -62,6 +62,11 @@ def region_of_interest(img, vertices):
 
 def calc_slope(line) :
     for x1,y1,x2,y2 in line:
+        # to avoid NaN, we check the following and return a large value 
+        # 1000.0 is practically vertical for most image resolutions
+        #
+        if(x1 == x2) :
+            return 1000.0
         return ((y2-y1)/(x2-x1)) 
     
 def x4y(line, ny, slope) :
@@ -169,11 +174,11 @@ def process_image(image):
     result = gaussian_blur(result,5)
     # 70, 150
     result = canny(result,70,150)
-    mpimg.imsave('/home/andreas/NanoDegree/CarND-LaneLines-P1/test_images_output/canny-'+str(index)+'.png',result)
+    mpimg.imsave('/home/andreas/NanoDegree/CarND-LaneLines-P1/test_images_output/canny-0.png',result)
     result = region_of_interest(result,vertices)
     # result = hough_lines(result,2,1,20,6,30)
-    result = hough_lines(result,3,np.pi/180,10,6,30)
-    mpimg.imsave('/home/andreas/NanoDegree/CarND-LaneLines-P1/test_images_output/hough-'+str(index)+'.png',result)
+    result = hough_lines(result,3,np.pi/180,30,6,30)
+    mpimg.imsave('/home/andreas/NanoDegree/CarND-LaneLines-P1/test_images_output/hough-0.png',result)
     result = weighted_img(result,image)
     return result
 
@@ -197,17 +202,18 @@ print([plt.imshow(x,  cmap='gray') for x in rArray])
 
 from moviepy.editor import VideoFileClip
 
-white_output = rootDir+'test_videos_output/solidWhiteRight.mp4'
-clip1 = VideoFileClip(rootDir+"test_videos/solidWhiteRight.mp4")
-white_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-white_clip.write_videofile(white_output, audio=False)
-
-y_output = rootDir+'test_videos_output/solidYellowLeft.mp4'
-clip1 = VideoFileClip(rootDir+"test_videos/solidYellowLeft.mp4")
-y_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-y_clip.write_videofile(y_output, audio=False)
-
-c_output = rootDir+'test_videos_output/challenge.mp4'
-clip1 = VideoFileClip(rootDir+"test_videos/challenge.mp4")
-c_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
-c_clip.write_videofile(c_output, audio=False)
+#
+#white_output = rootDir+'test_videos_output/solidWhiteRight.mp4'
+#clip1 = VideoFileClip(rootDir+"test_videos/solidWhiteRight.mp4")
+#white_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+#white_clip.write_videofile(white_output, audio=False)
+#
+#y_output = rootDir+'test_videos_output/solidYellowLeft.mp4'
+#clip1 = VideoFileClip(rootDir+"test_videos/solidYellowLeft.mp4")
+#y_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+#y_clip.write_videofile(y_output, audio=False)
+#
+#c_output = rootDir+'test_videos_output/challenge.mp4'
+#clip1 = VideoFileClip(rootDir+"test_videos/challenge.mp4")
+#c_clip = clip1.fl_image(process_image) #NOTE: this function expects color images!!
+#c_clip.write_videofile(c_output, audio=False)
